@@ -94,10 +94,7 @@ function fastify (options) {
   const requestIdLogLabel = options.requestIdLogLabel || 'reqId'
   const bodyLimit = options.bodyLimit || defaultInitOptions.bodyLimit
   const disableRequestLogging = options.disableRequestLogging || false
-
-  if (options.schemaErrorFormatter) {
-    validateSchemaErrorFormatter(options.schemaErrorFormatter)
-  }
+  const exposeHeadRoutes = options.exposeHeadRoutes != null ? options.exposeHeadRoutes : false
 
   const ajvOptions = Object.assign({
     customOptions: {},
@@ -131,6 +128,7 @@ function fastify (options) {
   options.disableRequestLogging = disableRequestLogging
   options.ajv = ajvOptions
   options.clientErrorHandler = options.clientErrorHandler || defaultClientErrorHandler
+  options.exposeHeadRoutes = exposeHeadRoutes
 
   const initialConfig = getSecuredInitialConfig(options)
 
@@ -176,7 +174,7 @@ function fastify (options) {
     [kHooks]: new Hooks(),
     [kSchemas]: schemas,
     [kValidatorCompiler]: null,
-    [kSchemaErrorFormatter]: options.schemaErrorFormatter,
+    [kSchemaErrorFormatter]: null,
     [kErrorHandler]: defaultErrorHandler,
     [kSerializerCompiler]: null,
     [kReplySerializerDefault]: null,
@@ -304,6 +302,11 @@ function fastify (options) {
   // will not detect it, and allow the user to override it.
   Object.setPrototypeOf(fastify, { use })
 
+  if (options.schemaErrorFormatter) {
+    validateSchemaErrorFormatter(options.schemaErrorFormatter)
+    fastify[kSchemaErrorFormatter] = options.schemaErrorFormatter.bind(fastify)
+  }
+
   // Install and configure Avvio
   // Avvio will update the following Fastify methods:
   // - register
@@ -318,7 +321,7 @@ function fastify (options) {
       use: 'register'
     }
   })
-  // Override to allow the plugin incapsulation
+  // Override to allow the plugin encapsulation
   avvio.override = override
   avvio.on('start', () => (fastify[kState].started = true))
   fastify[kAvvioBoot] = fastify.ready // the avvio ready function
@@ -562,7 +565,7 @@ function fastify (options) {
   function setSchemaErrorFormatter (errorFormatter) {
     throwIfAlreadyStarted('Cannot call "setSchemaErrorFormatter" when fastify instance is already started!')
     validateSchemaErrorFormatter(errorFormatter)
-    this[kSchemaErrorFormatter] = errorFormatter
+    this[kSchemaErrorFormatter] = errorFormatter.bind(this)
     return this
   }
 

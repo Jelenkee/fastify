@@ -41,7 +41,7 @@ test('plugin metadata - ignore prefix', t => {
   }
 })
 
-test('fastify.register with fastify-plugin should not incapsulate his code', t => {
+test('fastify.register with fastify-plugin should not encapsulate his code', t => {
   t.plan(10)
   const fastify = Fastify()
 
@@ -483,7 +483,7 @@ test('approximate a plugin name also when fastify-plugin has no meta data', t =>
   })
 })
 
-test('plugin incapsulation', t => {
+test('plugin encapsulation', t => {
   t.plan(10)
   const fastify = Fastify()
 
@@ -562,7 +562,11 @@ test('add hooks after route declaration', t => {
   const fastify = Fastify()
 
   function plugin (instance, opts, next) {
-    instance.decorateRequest('check', {})
+    instance.decorateRequest('check', null)
+    instance.addHook('onRequest', (req, reply, next) => {
+      req.check = {}
+      next()
+    })
     setImmediate(next)
   }
   fastify.register(fp(plugin))
